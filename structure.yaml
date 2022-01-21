@@ -1,0 +1,133 @@
+openapi: '3.0.2'
+info:
+  title: ONS Accredited Custodian API
+  version: '1.0'
+  contact:
+    name: Chris Milner
+    email: chris.milner@hdruk.ac.uk
+  license:
+    name: Apache 2.0
+    url: 'https://www.apache.org/licenses/LICENSE-2.0'
+  description: Example API to perform 2 actions, a GET API to list all of the accredited researches in JSON format, and a POST API to check wether a researcher is accredided or not
+servers:
+  - url: https://localost.3001/
+paths:
+  /list:
+    get:
+      summary: List accredited researchers
+      tags: []
+      operationId: list-datasets
+      description: List all of the accredited researches in JSON Format
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    Researcher ID:
+                      type: integer
+                    First name:
+                      type: string
+                    Last name:
+                      type: string
+                    'Organisation ID (ROR, ODS)':
+                      type: string
+                    Organisation:
+                      type: string
+                    Email:
+                      type: string
+                    Accreditation Number:
+                      type: integer
+                    Type:
+                      type: string
+                    Expiry Date:
+                      type: string
+                    Public Record:
+                      type: string
+                    Stage: 
+                      type: string
+        '500':
+          description: Internal Server Error
+  /check:
+    post:
+      summary: List accredited researchers
+      tags: []
+      operationId: list-datasets
+      description: List all of the accredited researches in JSON Format
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    enum: [200]
+                  message:
+                    type: string
+                  isValid:
+                    type: boolean
+                    enum: [true]
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      forename:
+                        type: string
+                      surname:
+                        type: string
+                      email:
+                        type: string
+                      expiryDate:
+                        type: string
+        '300':
+          description: More than 1 result found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    enum: [200]
+                  message:
+                    type: string
+                    enum: ['Multiple results were found using your search terms. Please provide an accreditation number for accurate results']
+        '401':
+          description: Accreditation expired
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    enum: [200]
+                  message:
+                    type: string
+                    enum: ['The user was found in our database how ever their accreditation expired']
+                  isValid:
+                    type: boolean
+                    enum: [false]
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    enum: [200]
+                  message:
+                    type: string
+                    enum: ['No user was found against the provided information']
+        '500':
+          description: Internal Server Error

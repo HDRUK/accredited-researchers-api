@@ -1,0 +1,24 @@
+{
+  "name": "mock_api",
+  "version": "1.0.0",
+  "description": "Mock API for acdredited researchers",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "csvtojson": "^2.0.10",
+    "express": "^4.17.2",
+    "express-openapi": "^10.1.0",
+    "express-rate-limit": "^6.1.0",
+    "fs": "^0.0.1-security",
+    "jsonschema": "^1.4.0",
+    "lookup-csv": "^1.1.0",
+    "moment": "^2.29.1",
+    "mongodb": "^4.3.0",
+    "mysql": "^2.18.1",
+    "sqlite3": "^5.0.2"
+  }
+}

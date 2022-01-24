@@ -112,27 +112,66 @@ if(data_source === 'sql'){
 
 // Endpoint to list out the fields from the DB
 app.get('/list-researchers', function(req, res){
+    /**
+     * Handle the limit and the skip query params which we will
+     * now call offset to simplify SQL terms
+     */
+    let limit, offset = null;
+    if('limit' in req.query){
+        limit = parseInt(req.query.limit);
+    }
+    if('skip' in req.query){
+        offset = parseInt(req.query.skip);
+    }
+
+
     if(data_source === 'sql'){
         let sql = "SELECT id AS 'Researcher ID', forename, surname, organisation_id, organisation_name, accreditation_number, `type`, expiry_date, `stage`  FROM `accredited_users`";
-        connection.query(sql, function (err, rows, fields) {
+        if(isNaN(limit)) {
+            sql+=' LIMIT '+con.escape(limit);
+            if(isNaN(offset)){
+                sql+=", "+con.escape(offset);
+            }
+        }
+
+        // Execute the query
+        con.query(sql, function (err, rows, fields) {
             if (err) {
                 throw err.message;
             }
 
             // Just read and output
             res.statusCode = 200;
-            res.json(rows);
+            res.json({
+                count: rows.length,
+                items: rows
+            });
         });
     } else if(data_source === 'csv'){
         let sql = "SELECT id AS 'Researcher ID', forename, surname, organisation_id, organisation_name, accreditation_number, `type`, expiry_date, `stage`  FROM `accredited_users`";
-        db.all(sql, [], function(err, rows){
+        let params = [];
+        if(isNaN(limit)) {
+            sql+=' LIMIT ?';
+            params.push(limit);
+            if(isNaN(offset)){
+                sql+=", ?";
+                params.push(offset);
+            }
+        }
+
+
+        // Execute the query
+        db.all(sql, params, function(err, rows){
             if(err){
                 throw err.message;
             }
 
             // Just read and output
             res.statusCode = 200;
-            res.json(rows);
+            res.json({
+                count: rows.length,
+                items: rows
+            });
         });
     } else {
         // Mongodb -- TODO
@@ -141,19 +180,93 @@ app.get('/list-researchers', function(req, res){
 
 
 
+// Get a researcher by acc
+app.get('/researcher/:id', function(req, res){
+    if(data_source === 'sql'){
+        // Assumed column names and the table name here
+        let sql = 'SELECT researcher_id,first_name,last_name,organisation_id,organisation_name,accreditation_number,accreditation_type,expiry_date,is_public,application_stage'
+        + 'FROM `accredited_users` '
+        + 'WHERE `accreditation_number`='+con.escape(req.params.id);
+
+        let results;
+        con.query(sql, function (error, rows, fields) {
+            if (error) {
+                throw error;
+            }
+
+            // results is now set with the user information
+            results = rows;
+        });
+
+    } else if(data_source === 'mongoDB'){
+        // MongoDB -- TODO
+        let results = [
+            {
+                researcher_id: "integer",
+                first_name: "string",
+                last_name: "string",
+                organisation_id: "integer",
+                organisation_name: "string",
+                accreditation_number: "integer",
+                accreditation_type: "string",
+                expiry_date: "string",
+                is_public: "boolean",
+                application_stage: "string|integer"
+            }
+        ];
+    } else {
+        // Read from SQLite (this)
+        let sql = 'SELECT researcher_id,first_name,last_name,organisation_id,organisation_name,accreditation_number,accreditation_type,expiry_date,is_public,application_stage'
+        + 'FROM `accredited_users` '
+        + 'WHERE `accreditation_number`=?';
+        let results;
+        db.all(sql, [req.params.id], function(err, rows){
+            if (err) {
+                throw err.message;
+            }
+            
+            results = rows;
+        });
+    }
+
+    if(results.length == 0){
+        res.statusCode = 204;
+        res.json({
+            message: 'No user was found for the given ID'
+        });
+    } else {
+        res.statusCode = 200;
+        res.json(results[0]);
+    }
+});
 
 
 
 
 // Define the route
 app.post('/check', function(req, res){
-    console.log('Got body:', req.body);
+    
+    /**
+     * Here we have assumed that there are some basic checks
+     * done uisng forename, surname, and accredicaiton number. 
+     * 
+     * All of the input options are listed below so any combination
+     * of search would work, we have just used this as an example
+    {
+        accreditation_number: "integer",
+        researcher_id: "string",
+        first_name: "string",
+        last_name: "string",
+        email_address: "string",
+        organisation_id: "integer",
+        organisation_name: "string"
+    }
+     */
     
 
     // Set the data into variables here
-    let f_name  = req.body.forename;
-    let s_name  = req.body.surname;
-    let email  = req.body.surname;
+    let f_name  = req.body.first_name;
+    let s_name  = req.body.last_name;
     let acr_num = req.body.accreditation_number;
 
 
@@ -176,11 +289,6 @@ app.post('/check', function(req, res){
         "min": 0
     });
 
-    var email_valid = new Validator().validate(email, {
-        "type": "int",
-        "format": "email"
-    });
-
     // Handle failures here
 
 
@@ -188,33 +296,42 @@ app.post('/check', function(req, res){
     // Handle the query, we're going to set the variable 'results' in the same format to avoid duplicating logic
     if(data_source === 'sql'){
         // Assumed column names and the table name here
+        let sql = 'SELECT researcher_id,first_name,last_name,organisation_id,organisation_name,accreditation_number,accreditation_type,expiry_date,is_public,application_stage'
+        + 'FROM `accredited_users` '
+        + 'WHERE `first_name`='+con.escape(f_name)+' AND `last_name`='+con.escape(s_name)+' AND `accreditation_number`='+con.escape(acr_num);
 
-        // With accreditation number
-        let sql = 'SELECT id,expiration_date,forename,surname FROM `accredited_users` WHERE `forename`='+con.escape(f_name)+' AND `surname`='+con.escape(s_name)+' AND `accreditation_number`='+con.escape(acr_num);
-
-        connection.query(sql, function (error, results, fields) {
+        let results;
+        con.query(sql, function (error, rows, fields) {
             if (error) {
                 throw error;
             }
 
             // results is now set with the user information
-            var results = results;
+            results = rows;
         });
 
     } else if(data_source === 'mongoDB'){
         // MongoDB -- TODO
-
-        var results = [
+        let results = [
             {
-                id: 123454321,                  // Assumed format
-                expiration_date: "DD/MM/YYYY"   // Assumed format
+                researcher_id: "integer",
+                first_name: "string",
+                last_name: "string",
+                organisation_id: "integer",
+                organisation_name: "string",
+                accreditation_number: "integer",
+                accreditation_type: "string",
+                expiry_date: "string",
+                is_public: "boolean",
+                application_stage: "string|integer"
             }
         ];
     } else {
-        // Read from CSV/SQLite -- TODO
-
-        let sql = 'SELECT id,expiration_date,forename,surname FROM `accredited_users` WHERE `forename`=? AND `surname`=? AND `accreditation_number`=?';
-        var results;
+        // Read from SQLite (this)
+        let sql = 'SELECT researcher_id,first_name,last_name,organisation_id,organisation_name,accreditation_number,accreditation_type,expiry_date,is_public,application_stage'
+        + 'FROM `accredited_users` '
+        + 'WHERE `first_name`=? AND `last_name`=? AND `accreditation_number`=?';
+        let results;
         db.all(sql, [f_name, s_name, acr_num], function(err, rows){
             if (err) {
                 throw err.message;
@@ -226,32 +343,33 @@ app.post('/check', function(req, res){
 
 
 
-
-
-
     /**
      * Results should now be set with the following format
-     * [
-     *  {
-     *      id: 123454321,                  // Assumed format
-     *      expiration_date: "DD/MM/YYYY",   // Assumed format
-     *      forename: "string",
-     *      surname: "string"
-     *  }
-     * ]
+    [
+        {
+            researcher_id: "string",
+            first_name: "string",
+            last_name: "string",
+            organisation_id: "integer",
+            organisation_name: "string",
+            accreditation_number: "integer",
+            accreditation_type: "string",
+            expiry_date: "string",
+            is_public: "boolean",
+            application_stage: "string|integer"
+        }
+    ]
      */
     if(results.length == 0){
         // We didn't find any results so return not found
-        res.statusCode = 404;
+        res.statusCode = 204;
         res.json({
-            status: 404, 
             message: 'No user was found against the provided information'
         });
     } else if(results.length > 1){
         // We found more than 1 result, handle this
         res.statusCode = 300;
         res.json({
-            status: 300, 
             message: 'Multiple results were found using your search terms. Please provide an accreditation number for accurate results'
         });
     } else {
@@ -259,13 +377,12 @@ app.post('/check', function(req, res){
         var data = results[0];
 
         // lets check to see if the accreditation has expired
-        var db_accreditation_expired = moment(data.expiration_date, 'DD/MM/YYYY').isBefore(moment());
+        var db_accreditation_expired = moment(data.expiry_date, 'DD/MM/YYYY').isBefore(moment());
         if(db_accreditation_expired === true){
 
             // The accreditation has expired
-            res.statusCode = 401;
+            res.statusCode = 204;
             res.json({
-                status: 401,
                 message: 'The user was found in our database how ever their accreditation expired',
                 isValid: false,
                 details: data
@@ -275,7 +392,6 @@ app.post('/check', function(req, res){
             // Accredication has not expired, return success and their expiration date. 
             res.statusCode = 200;
             res.json({
-                status: 200,
                 message: 'The users was found in our database and their accreditation is valid',
                 isValid: true,
                 details: data

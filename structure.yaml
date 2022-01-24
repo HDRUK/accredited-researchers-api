@@ -1,6 +1,6 @@
-openapi: '3.0.2'
+openapi: 3.0.2
 info:
-  title: ONS Accredited Custodian API
+  title: Accredited Researcher API
   version: '1.0'
   contact:
     name: Chris Milner
@@ -8,15 +8,15 @@ info:
   license:
     name: Apache 2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0'
-  description: Example API to perform 2 actions, a GET API to list all of the accredited researches in JSON format, and a POST API to check wether a researcher is accredided or not
+  description: 'Example API to perform 3 actions: a GET API to list all of the accredited researches in JSON format. A GET API to get a specific researchers information. A POST API to check whether a researcher is accredided or not'
 servers:
-  - url: https://localost.3001/
+  - url: 'https://locahost:3001'
 paths:
-  /list:
+  /researchers:
     get:
-      summary: List accredited researchers
+      summary: List Accredited Researchers
       tags: []
-      operationId: list-datasets
+      operationId: list-researchers
       description: List all of the accredited researches in JSON Format
       responses:
         '200':
@@ -24,40 +24,61 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    Researcher ID:
-                      type: integer
-                    First name:
-                      type: string
-                    Last name:
-                      type: string
-                    'Organisation ID (ROR, ODS)':
-                      type: string
-                    Organisation:
-                      type: string
-                    Email:
-                      type: string
-                    Accreditation Number:
-                      type: integer
-                    Type:
-                      type: string
-                    Expiry Date:
-                      type: string
-                    Public Record:
-                      type: string
-                    Stage: 
-                      type: string
-        '500':
-          description: Internal Server Error
-  /check:
-    post:
-      summary: Check accredited researcher status
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        researcher_id:
+                          type: string
+                        first_name:
+                          type: string
+                        last_name:
+                          type: string
+                        organisation_id:
+                          type: string
+                        organisation_name:
+                          type: string
+                        accreditation_number:
+                          type: integer
+                        accreditation_type:
+                          type: string
+                        expiry_date:
+                          type: string
+                        is_public:
+                          type: string
+                        application_stage:
+                          type: string
+                      required:
+                        - first_name
+                        - last_name
+                        - organisation_name
+                        - accreditation_number
+                        - accreditation_type
+                        - expiry_date
+                required:
+                  - count
+      parameters:
+        - schema:
+            type: number
+          in: query
+          name: limit
+          description: Limit number of users to return
+        - schema:
+            type: number
+          in: query
+          name: skip
+          description: Skip number of users
+  '/researcher/{id}':
+    get:
+      summary: Get researcher information by ID
       tags: []
-      operationId: check-researcher-status
-      description: Check the status of the supplied accredited researcher
+      operationId: list-researcher
+      description: Get the information about a specific researcher. Researcher ID provided in the URL path
       responses:
         '200':
           description: OK
@@ -66,27 +87,107 @@ paths:
               schema:
                 type: object
                 properties:
-                  status:
+                  researcher_id:
+                    type: string
+                  first_name:
+                    type: string
+                  last_name:
+                    type: string
+                  organisation_id:
+                    type: string
+                  organisation_name:
+                    type: string
+                  accreditation_number:
                     type: integer
-                    enum: [200]
+                  accreditation_type:
+                    type: string
+                  expiry_date:
+                    type: string
+                  is_public:
+                    type: string
+                  application_stage:
+                    type: string
+        '204':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    enum:
+                     - No user was found for the given ID
+  /check:
+    post:
+      summary: Check whether a researcher is accredided
+      tags: []
+      operationId: check-researcher
+      description: List all of the accredited researches in JSON Format
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accreditation_number:
+                  type: integer
+                researcher_id:
+                  type: string
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+                email_address:
+                  type: string
+                organisation_id:
+                  type: string
+                organisation_name:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
                   message:
                     type: string
                   isValid:
                     type: boolean
-                    enum: [true]
+                    enum:
+                      - true
                   data:
                     type: object
                     properties:
-                      id:
+                      researcher_id:
+                        type: string
+                      first_name:
+                        type: string
+                      last_name:
+                        type: string
+                      organisation_id:
+                        type: string
+                      organisation_name:
+                        type: string
+                      accreditation_number:
                         type: integer
-                      forename:
+                      accreditation_type:
                         type: string
-                      surname:
+                      expiry_date:
                         type: string
-                      email:
+                      is_public:
                         type: string
-                      expiryDate:
+                      application_stage:
                         type: string
+                    required:
+                      - first_name
+                      - last_name
+                      - organisation_name
+                      - accreditation_number
+                      - accreditation_type
+                      - expiry_date
         '300':
           description: More than 1 result found
           content:
@@ -94,40 +195,32 @@ paths:
               schema:
                 type: object
                 properties:
-                  status:
-                    type: integer
-                    enum: [200]
                   message:
                     type: string
-                    enum: ['Multiple results were found using your search terms. Please provide an accreditation number for accurate results']
-        '401':
-          description: Accreditation expired
+                    enum:
+                      - Multiple results were found using your search terms. Please provide an accreditation number for accurate results
+        '204':
+          description: Accreditation expired / User not found
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  status:
-                    type: integer
-                    enum: [200]
                   message:
                     type: string
-                    enum: ['The user was found in our database how ever their accreditation expired']
+                    enum:
+                      - The user was found in our database how ever their accreditation expired -OR- No user was found against the provided information
                   isValid:
                     type: boolean
-                    enum: [false]
-        '404':
-          description: User not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: integer
-                    enum: [200]
-                  message:
-                    type: string
-                    enum: ['No user was found against the provided information']
-        '500':
-          description: Internal Server Error
+                    enum:
+                      - false     
+      security:
+        - Bearer: []
+components:
+  securitySchemes:
+    Bearer:
+      type: http
+      scheme: bearer
+      description: Example Security Scheme. Can be anything else OIDC
+security:
+  - Bearer: []

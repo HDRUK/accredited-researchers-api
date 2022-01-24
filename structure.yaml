@@ -73,12 +73,16 @@ paths:
           in: query
           name: skip
           description: Skip number of users
-  '/researcher/{id}':
+  '/researchers/{id}':
+    parameters:
+      - schema:
+          type: string
+        name: id
+        in: path
+        required: true
     get:
-      summary: Get researcher information by ID
+      summary: Get researcher by id
       tags: []
-      operationId: list-researcher
-      description: Get the information about a specific researcher. Researcher ID provided in the URL path
       responses:
         '200':
           description: OK
@@ -87,6 +91,8 @@ paths:
               schema:
                 type: object
                 properties:
+                  accreditation_number:
+                    type: string
                   researcher_id:
                     type: string
                   first_name:
@@ -97,17 +103,22 @@ paths:
                     type: string
                   organisation_name:
                     type: string
-                  accreditation_number:
-                    type: integer
                   accreditation_type:
                     type: string
                   expiry_date:
                     type: string
                   is_public:
-                    type: string
+                    type: boolean
                   application_stage:
                     type: string
-        '204':
+                required:
+                  - accreditation_number
+                  - first_name
+                  - last_name
+                  - organisation_name
+                  - accreditation_type
+                  - expiry_date
+        '404':
           description: Not Found
           content:
             application/json:
@@ -117,7 +128,11 @@ paths:
                   message:
                     type: string
                     enum:
-                     - No user was found for the given ID
+                      - No user was found for the given ID
+                required:
+                  - message
+      operationId: get-researchers-id
+      description: Get researcher information by ID
   /check:
     post:
       summary: Check whether a researcher is accredided

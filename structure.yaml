@@ -54,10 +54,10 @@ paths:
           description: Internal Server Error
   /check:
     post:
-      summary: List accredited researchers
+      summary: Check accredited researcher status
       tags: []
-      operationId: list-datasets
-      description: List all of the accredited researches in JSON Format
+      operationId: check-researcher-status
+      description: Check the status of the supplied accredited researcher
       responses:
         '200':
           description: OK

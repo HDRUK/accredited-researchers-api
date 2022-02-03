@@ -135,7 +135,7 @@ paths:
       description: Get researcher information by ID
   /check:
     post:
-      summary: Check whether a researcher is accredided
+      summary: Check whether a researcher is accredited
       tags: []
       operationId: check-researcher
       description: List all of the accredited researches in JSON Format
@@ -203,17 +203,6 @@ paths:
                       - accreditation_number
                       - accreditation_type
                       - expiry_date
-        '300':
-          description: More than 1 result found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    enum:
-                      - Multiple results were found using your search terms. Please provide an accreditation number for accurate results
         '204':
           description: Accreditation expired / User not found
           content:
@@ -228,9 +217,81 @@ paths:
                   isValid:
                     type: boolean
                     enum:
-                      - false     
+                      - false
+        '300':
+          description: More than 1 result found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    enum:
+                      - Multiple results were found using your search terms. Please provide an accreditation number for accurate results
       security:
         - Bearer: []
+  /batch:
+    post:
+      summary: Batch check a list of researchers are accredited
+      tags: []
+      operationId: batch-check-researcher
+      description: Check list of accredited researchers in batch - Async via webhook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                request_id:
+                  type: string
+                webhook_url:
+                  type: string
+                  format: uri
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      local_id:
+                        type: string
+                      accreditation_number:
+                        type: integer
+                      researcher_id:
+                        type: string
+                      first_name:
+                        type: string
+                      last_name:
+                        type: string
+                      email_address:
+                        type: string
+                      organisation_name:
+                        type: string
+                      organisation_id:
+                        type: string
+                    required:
+                      - local_id
+              required:
+                - request_id
+        description: Request payload has a request-id and an optional webhook url for posting back responses async. Each item has a local id to allow the requester to correlate the async response
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal Server Error
+        '501':
+          description: Not Implemented
+        '503':
+          description: Service Unavailable
+      security:
+        - Bearer: []
+      x-request-id: null
+      x-webhook-url: null
+    parameters: []
 components:
   securitySchemes:
     Bearer:

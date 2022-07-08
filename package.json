@@ -16,7 +16,7 @@
     "fs": "^0.0.1-security",
     "jsonschema": "^1.4.0",
     "lookup-csv": "^1.1.0",
-    "moment": "^2.29.1",
+    "moment": "^2.29.4",
     "mongodb": "^4.3.0",
     "mysql": "^2.18.1",
     "sqlite3": "^5.0.2"
